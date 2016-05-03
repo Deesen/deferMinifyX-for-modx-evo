@@ -17,6 +17,7 @@ class deferMinifyX
     static $cssArr = array();
     static $cssCacheChanged = false;
     static $debugMessages = array();
+    static $debugTpl = '';
     static $idsArr = array();
     static $jsArr = array();
     static $jsCacheChanged = false;
@@ -26,18 +27,18 @@ class deferMinifyX
     static function addScriptSrc($string, $id=NULL, $dependsOn=NULL, $unique=true, $defer=false, $async=false)
     {
         if($string === '') return;
-        
+
         $arr = explode(',', $string);
         $id         = !$id || count($arr) >> 1  ? NULL  : $id;
         $dependsOn  = !$dependsOn               ? '0'   : $dependsOn;
 
         foreach($arr as $file) {
-            
+
             $file  = explode('||', $file);
             $value = $file[0];
             $defer = in_array('defer', $file) ? true : $defer;
             $async = in_array('async', $file) ? true : $async;
-            
+
             $found = $unique != false ? self::checkUniqueJs($value, 'src') : false;
             if (!$found) {
                 $new = array();
@@ -53,11 +54,11 @@ class deferMinifyX
     static function addScript($string, $id=NULL, $dependsOn=NULL, $unique=true)
     {
         if($string === '') return;
-        
+
         $id         = !$id          ? NULL  : $id;
         $dependsOn  = !$dependsOn   ? '0'   : $dependsOn;
         $found = $unique != false ? self::checkUniqueJs($string, 'js') : false;
-        
+
         if (!$found) {
             $newJs = array();
             $newJs['val'] = $string;
@@ -85,16 +86,16 @@ class deferMinifyX
     static function addCssSrc($string, $unique=true, $defer=false, $async=false, $type='')
     {
         if($string === '') return;
-        
+
         $arr = explode(',', $string);
-        
+
         foreach($arr as $file) {
 
             $file = explode('||', $file);
             $src = $file[0];
             $defer = in_array('defer', $file) ? true : $defer;
             $async = in_array('async', $file) ? true : $async;
-            
+
             if(!empty($src)) {
                 $found = false;
                 if ($unique != false) {
@@ -116,7 +117,7 @@ class deferMinifyX
             }
         }
     }
-   
+
     static function opt($option)
     {
         return isset(self::$options[$option]) ? self::$options[$option] : NULL;
@@ -134,7 +135,7 @@ class deferMinifyX
 
     static function setOptions($optionsArr)
     {
-        if(empty(self::$options)) 
+        if(empty(self::$options))
             self::$options = $optionsArr;
     }
 
@@ -144,6 +145,11 @@ class deferMinifyX
             self::$options[$option] = $val;
     }
 
+    static function setDebugTpl($tpl)
+    {
+        self::$debugTpl = $tpl;
+    }
+
     static function modifyOutput($output)
     {
         // @todo: case-insensitive replace </body> / </bODy>
@@ -151,7 +157,8 @@ class deferMinifyX
             $outputArr = self::getDefer();
 
             $output = deferMinifyX::replaceImgSrcAttributesForDeferImages($output);
-            $output = str_replace('</body>', $outputArr['output'] . self::getLinkTags(true) . $outputArr['debug'] . '</body>', $output);
+            $noScriptCss = self::opt('noScriptCss') ? self::getLinkTags(true) : '';
+            $output = str_replace('</body>', $outputArr['output'] . $noScriptCss . $outputArr['debug'] . '</body>', $output);
         } else {
             $output = str_replace('</head>', self::getLinkTags() . '</head>', $output);
             $output = str_replace('</body>', self::getScriptTags() . self::renderDebugMsg() . '</body>', $output);
@@ -170,7 +177,7 @@ class deferMinifyX
         $output .= $addNoScript ? "</noscript>\n" : '';
         return $output;
     }
-    
+
     static function getScriptTags()
     {
         if(isset(self::$jsArr[0])) {
@@ -185,7 +192,7 @@ class deferMinifyX
     {
         if(defined('DEFERMINIFYX_GET')) return '';
         define('DEFERMINIFYX_GET',1);
-        
+
         // Init vars
         $minCss     = self::opt('minifyCssFile');
         $minFile    = self::opt('minifyJsFile');
@@ -197,13 +204,13 @@ class deferMinifyX
 
             if(self::$cache['min']['cssSetup'] != md5(self::opt('defaultCssFiles')))
                 self::$cssCacheChanged = true;
-            
+
             // Check cache for changed CSS files
             if(!file_exists(self::opt('base_path') . $minCss)) {
                 self::$cssCacheChanged = true;
             } else if (!empty(self::$cssArr)) {
                 foreach (self::$cssArr as $file) {
-                    if($file['type'] != 'default') continue; 
+                    if($file['type'] != 'default') continue;
                     $filePath = self::opt('base_path') . $file['src'];
                     if (file_exists($filePath)) {
                         $time = (int)filemtime($filePath);
@@ -227,9 +234,9 @@ class deferMinifyX
                     self::$buffer .= self::$buffer != '' ? "\n" : '';
                     self::$buffer .= $fileContent;
                 }
-                
+
                 if (!file_put_contents(self::opt('base_path') . $minCss, self::$buffer)) self::debug('Minified Css-File could not be written: ' . $minCss);
-                
+
                 self::$cache['min']['cssSetup'] = md5(self::opt('defaultCssFiles'));
             }
 
@@ -244,7 +251,7 @@ class deferMinifyX
             }
             self::$cssArr = $newCssArr;
         }
-        
+
         /////////////////////////////////////////////////////////////////////
         // Prepare JS-object - minify files into min.js 
         if(self::opt('minifyJs')) {
@@ -294,14 +301,14 @@ class deferMinifyX
             // Create new min.js
             if (self::$jsCacheChanged) {
                 self::resetBuffer();
-                
+
                 // Sort equivalent to JS-functions
                 if (isset(self::$jsArr[0])) {
                     self::deferRecursive(0); // will use self::$buffer
                 }
-                
+
                 if (!file_put_contents(self::opt('base_path') . $minFile, self::$buffer)) self::debug('Minified Js-File could not be written: ' . $minFile);
-                
+
                 self::$cache['min']['jsSetup'] = md5(self::opt('defaultJsFiles'));
             }
 
@@ -316,12 +323,12 @@ class deferMinifyX
         $scriptSrcStr = json_encode(self::$jsArr, $jsonIndent);
 
         // Get JS-chaining magic
-        if (self::opt('minify') && self::opt('minifyDefer') && !self::opt('debug')) { 
-            $output = self::getMinifiedJsFunctions($cssStr, $scriptSrcStr); 
+        if (self::opt('minify') && self::opt('minifyDefer') && !self::opt('debug')) {
+            $output = self::getMinifiedJsFunctions($cssStr, $scriptSrcStr);
         } else {
-            $output = self::getJsFunctions($cssStr, $scriptSrcStr); 
-        }       
-        
+            $output = self::getJsFunctions($cssStr, $scriptSrcStr);
+        }
+
         // Return array to get() to enable individual handling of content
         return array(
             'output'=>$output,
@@ -368,7 +375,7 @@ class deferMinifyX
     {
         if(self::opt('cache')) {
             $cacheFile = self::opt('cache_path') . 'cache.php';
-            
+
             if(self::opt('cacheReset') == 'all') {
                 self::loadCache();
                 if(isset(self::$cache['files'])) {
@@ -382,7 +389,7 @@ class deferMinifyX
                     }
                 }
             }
-            
+
             if(self::opt('cacheReset') == 'index' || self::opt('cacheReset') == 'all') {
                 if (is_readable($cacheFile)) {
                     if(!unlink($cacheFile)) self::debug('Cache-file could not be deleted');
@@ -392,13 +399,13 @@ class deferMinifyX
             }
         }
     }
-    
+
     // Checks cache for already minified files and sends file back or creates new
     static function getMinifiedAndCachedFile($file, $type)
     {
         $filePath = self::opt('base_path') . $file;
         $output = '';
-        
+
         if (file_exists($filePath)) {
             if (self::opt('cache')) {
                 if(!isset(self::$cache['files'][$file])) self::$cache['files'][$file] = 0;
@@ -417,7 +424,7 @@ class deferMinifyX
                             $output = self::minifyCss(file_get_contents($filePath));
                             break;
                     }
-                    
+
                     if (self::putContentsWithMakeDirectory($cachedFile, $output)) {
                         $filePath = $cachedFile;
                     } else {
@@ -431,7 +438,7 @@ class deferMinifyX
         }
         return $output;
     }
-    
+
     // adds ".min" to file-extenion
     static function addMinToFilename($filename)
     {
@@ -441,11 +448,11 @@ class deferMinifyX
         }
         return $filename;
     }
-    
+
     static function putContentsWithMakeDirectory($filePath, $content)
     {
         $path = dirname($filePath);
-        
+
         // dir doesn't exist, create it
         if (!is_dir($path)) {
             if(!mkdir($path, 0777, true)) {
@@ -457,7 +464,7 @@ class deferMinifyX
         }
         return true;
     }
-    
+
     /////////////////////////////////////////////////////////////
     // Same names as JS-functions / equivalent sorting mechanismn
     static function deferScriptSrc($p) {
@@ -522,7 +529,7 @@ class deferMinifyX
         } else {
             if (isset(self::$jsArr[$id])) {
                 if (isset(self::$jsArr[$id]['src']) || isset(self::$jsArr[$id]['js'])) {
-                        self::deferRecursive($id);
+                    self::deferRecursive($id);
                 }
             }
         }
@@ -531,10 +538,10 @@ class deferMinifyX
     {
         if(isset(self::$idsArr[$id]))
             self::debug('Double ID "'.$id.'" found! Use unique ID for "'.$val.'"');
-        
+
         self::$idsArr[$id] = true;
     }
-    
+
     // JS-function to provide multi-dimensional dependence of defered script-srcs and scripts
     static function getJsFunctions($cssStr, $scriptSrcStr)
     {
@@ -645,7 +652,7 @@ class deferMinifyX
         }
     </script>";
     }
-    
+
     // Provide compressed version of functions!
     static function getMinifiedJsFunctions($cssStr, $scriptSrcStr)
     {
@@ -654,7 +661,7 @@ class deferMinifyX
         return "
     <script>try{var css={$cssStr};var js={$scriptSrcStr};var element={};var l={};var p=0;var c=0;var cx=0;var id=0;var done=false;function deferCssSrc(){if(css.length){for(c=0;c<css.length;c++){l=document.createElement(\"link\");l.rel=\"stylesheet\";l.href=css[c][\"src\"];h=document.getElementsByTagName(\"head\")[0];h.appendChild(l,h)}}}function deferScriptSrc(a){if(js[a].hasOwnProperty(\"src\")){for(c in js[a][\"src\"]){if(js[a][\"src\"][c][\"inits\"]!=undefined){js[a][\"src\"][c][\"inits\"]+=1;continue}id=js[a][\"src\"][c][\"id\"]!=undefined?js[a][\"src\"][c][\"id\"]:\"src_\"+a+\"_\"+c;val=js[a][\"src\"][c][\"val\"];element[id]=document.createElement(\"script\");element[id].src=val;document.body.appendChild(element[id]);js[a][\"src\"][c][\"inits\"]=1;addOnLoadHandler(id)}}}function deferScript(a){if(js[a].hasOwnProperty(\"js\")){for(c in js[a][\"js\"]){if(js[a][\"js\"][c][\"inits\"]!=undefined){js[a][\"js\"][c][\"inits\"]+=1;continue}id=js[a][\"js\"][c][\"id\"]!=undefined?js[a][\"js\"][c][\"id\"]:\"js_\"+a+\"_\"+c;val=js[a][\"js\"][c][\"val\"];element[id]=document.createElement(\"script\");element[id].text=val;document.body.appendChild(element[id]);js[a][\"js\"][c][\"inits\"]=1;addOnLoadHandler(id)}}}function deferRecursive(a){if(js.hasOwnProperty(a)){if(js[a].hasOwnProperty(\"src\")||js[a].hasOwnProperty(\"js\")){deferScriptSrc(a);deferScript(a)}}}function addOnLoadHandler(a){if(element[a]==undefined){}else{if(js.hasOwnProperty(a)){if(js[a].hasOwnProperty(\"src\")||js[a].hasOwnProperty(\"js\")){if(!element[a].src){deferRecursive(a)}else{element[a].onload=element[a].onreadystatechange=function(){if(!done&&(!this.readyState||this.readyState==\"loaded\"||this.readyState==\"complete\")){deferRecursive(a)}}}}}}}function downloadDeferedAtOnload(){{$deferImages}deferCssSrc();if(typeof js[\"0\"]==\"object\"){deferRecursive(\"0\")}}if(window.addEventListener){window.addEventListener(\"load\",downloadDeferedAtOnload,false)}else{if(window.attachEvent){window.attachEvent(\"onload\",downloadDeferedAtOnload)}else{window.onload=downloadDeferedAtOnload}}}catch(e){console.log(e)};</script>";
     }
-    
+
     static function getDeferImagesFunction()
     {
         return self::console('defer_images') ."
@@ -689,21 +696,21 @@ class deferMinifyX
     static function prepareMinifyLibs()
     {
         if(self::opt('minify')) {
-            
+
             // Prepare minify Css
             switch(self::opt('minifyCssLib')) {
                 case 'minifier':
                 default:
                     require_once(self::opt('core_path').'class/minifier/CSSmin.php'); // https://github.com/mrclay/minify 
             }
-            
+
             // Prepare minify Js
             switch(self::opt('minifyJsLib')) {
                 case 'jshrink':
                     require_once(self::opt('core_path').'class/jshrink/JShrink.php'); // https://github.com/tedious/JShrink
                     break;
                 case 'jsminplus':
-                    require_once(self::opt('core_path').'class/minifier/JSMinPlus.php'); 
+                    require_once(self::opt('core_path').'class/minifier/JSMinPlus.php');
                     break;
                 case 'jsmin':
                 default:
@@ -755,7 +762,7 @@ class deferMinifyX
     static function minifyHtml($string)
     {
         if(!self::opt('minify')) return $string;
-        
+
         switch(self::opt('minifyHtml')) {
             case 'minifier':
                 $out = Minify_HTML::minify($string);
@@ -766,13 +773,13 @@ class deferMinifyX
             default:
                 $out = $string;
         }
-        
+
         if(self::opt('debug')) {
             $inLength = strlen($string);
             $outLength = strlen($out);
             self::debug('HTML: Original ' . $inLength . ' Bytes - Minified ' . $outLength . ' Bytes - Difference ' . $inLength - $outLength . ' Bytes');
         }
-        
+
         return $out;
     }
 
@@ -784,7 +791,7 @@ class deferMinifyX
         $input = preg_replace_callback('#<([^\/\s<>!]+)(?:\s+([^<>]*?)\s*|\s*)(\/?)>#s', function($matches) {
             return '<' . $matches[1] . preg_replace('#([^\s=]+)(\=([\'"]?)(.*?)\3)?(\s+|$)#s', ' $1$2', $matches[2]) . $matches[3] . '>';
         }, str_replace("\r", "", $input));
-        
+
         // Minify inline CSS declaration(s)
         if(strpos($input, ' style=') !== false) {
             $input = preg_replace_callback('#<([^<]+?)\s+style=([\'"])(.*?)\2(?=[\/\s>])#s', function($matches) {
@@ -867,7 +874,7 @@ class deferMinifyX
             ),
             $input);
     }
-    
+
     // JavaScript Minifier
     public static function minify_js($input) {
         if(trim($input) === "") return $input;
@@ -893,7 +900,7 @@ class deferMinifyX
             ),
             $input);
     }
-    
+
     // Sends images as base64
     static function getImageBase64($file)
     {
@@ -915,7 +922,7 @@ class deferMinifyX
         }
         return self::opt('debug') ? 'File not found: '.$file : '';
     }
-    
+
     // Sends string as base64
     static function getStringBase64($string)
     {
@@ -926,7 +933,7 @@ class deferMinifyX
         }
         return self::opt('debug') ? 'File not found: '.$string : '';
     }
-    
+
     // mode 0 = full check, mode 1 = extension only
     static function getMime($file, $mode=0)
     {
@@ -934,7 +941,7 @@ class deferMinifyX
 
             // text
             'css' => 'text/css',
-            'js' => 'application/javascript',            
+            'js' => 'application/javascript',
 
             // images
             'png' => 'image/png',
@@ -949,7 +956,7 @@ class deferMinifyX
 
         $ext = strtolower(array_pop(explode('.',$file)));
         $filePath = self::opt('base_path') . $file;
-        
+
         if (function_exists('mime_content_type') && $mode == 0) {
             $mimetype = mime_content_type($file);
             return $mimetype;
@@ -964,7 +971,7 @@ class deferMinifyX
             return 'application/octet-stream';
         }
     }
-    
+
     // Prepare console logs for debugging
     static function console($key)
     {
@@ -988,7 +995,7 @@ class deferMinifyX
                     $c = "'script added with id \"'+id+'\"'"; $a = "log"; break;
                 case 'element_undefined_id':
                     $c = "'! element \"'+id+'\" undefined'"; $a = "error"; break;
-                
+
                 default:
                     $c = "'Debug: \"{$key}\"'"; $a = "info"; break;
             }
@@ -999,23 +1006,19 @@ class deferMinifyX
 
     static function renderDebugMsg()
     {
-        global $modx;
-        
+        $output = '';
+
         // ADD DEBUG-INFO AS HTML-COMMENTS ONLY WHEN LOGGED IN
         if (self::opt('sessionAuth') && self::opt('debug')) {
-            
+
             // Don´t reveal Base-path in debug-infos
             $options = self::$options;
             foreach(array('core_path','base_path','cache_path') as $option) {
                 $options[$option] = str_replace(self::opt('base_path'), '###/', $options[$option]);
             };
-            
-            // Check for debug-tpl
-            $tpl = $modx->getChunk(self::opt('debugTpl'));
-            if(!empty(self::opt('debugTpl')) && empty($tpl)) self::debug('debugTpl not found or empty');
-            
-            if(empty($tpl)) {
-                $tpl = '
+
+            // Check for debug-tpl or set default template
+            $output = !empty( self::$debugTpl ) ? self::$debugTpl : '
 <!-- ......................................................... deferMinifyX Debug:
 Items in $idsArr:
 [+ids+]
@@ -1033,7 +1036,6 @@ Debug-Messages:
 [+messages+]
 .......................................................... /deferMinifyX Debug -->
 ';
-            }
 
             $phArr = array(
                 'ids'=>print_r(self::$idsArr, true),
@@ -1042,11 +1044,12 @@ Debug-Messages:
                 'options'=>print_r($options, true),
                 'messages'=>' - ' . join("\n - ", self::$debugMessages)
             );
-            
-            return $modx->parseText($tpl, $phArr);
-        }
 
-        return '';
+            foreach($phArr as $ph=>$val) {
+                $output = str_replace('[+'.$ph.'+]', $val, $output);
+            }
+        }
+        return $output;
     }
 
     static function resetBuffer()

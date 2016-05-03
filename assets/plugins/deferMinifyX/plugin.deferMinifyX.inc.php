@@ -22,6 +22,7 @@ $optionsArr = array(
 'minifyJsLib'   =>isset($minifyJsLib)   ? $minifyJsLib      : 'minifier', // Minify or jsshrink
 'minifyCssLib'  =>isset($minifyCssLib)  ? $minifyCssLib     : 'minifier', // Only minify available right now
 'minifyHtml'    =>isset($minifyHtml)    ? $minifyHtml       : 'disabled', // Minify HTML-Output
+'noScriptCss'   =>isset($noScriptCss)   ? $noScriptCss      : true,       // Add <noscript><link style.css></noscript> as fallback
 'deferImages'   =>isset($deferImages)   ? bool($deferImages): false,      // Add deferImages-script (src="blank.jpg" data-src="real-image.jpg")
 'blankImage'    =>isset($blankImage)    ? $blankImage       : 'img/blank.jpg', // Name of blank.jpg
 'cache'         =>isset($cache)         ? bool($cache)      : true,       // Enable/disable caching of minified files (for debug)

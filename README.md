@@ -8,7 +8,8 @@ To set a standard set of CSS- and JS-files, minify them into min.css/min.js and 
 
 - Install plugin 
 - Add required CSS-, JS-files comma-separated in plugin-configuration
-- Set desired options & save plugin-configuration, finish!
+- Set desired parameters, and especially "defer" to true to enable defer-mechanismn
+- Save plugin-configuration, finish!
 
 When reloading your frontpage the CSS-, JS-files should be added as configured.
 
@@ -24,22 +25,23 @@ If you want to inject critical parts of CSS directly into the source-code, pleas
 |**Disable** Plugin    | Disable plugin for ressource-ids (comma-separated)                                        | |
 |**Enable** Plugin     | Enable plugin **only** for ressource-ids (comma-separated)                                | |
 |**CSS**               | Minify default CSS-files into min.css	                                                   | *enabled*, disabled |
-|Lib to minify CSS     | Which lib to use for minifying CSS-files                                                  | *minify*, regex |
+|Lib to minify CSS     | Which lib to use for minifying CSS-files                                                  | *minifier*, regex |
 |FilePath of min.css   | FilePath to store, example css/min.css                                                    | *min.css* |
 |Default CSS-files     | Comma-separated list, optional: add defer/async: css/style.css\|\|defer\|\|async)         | *css/style.css,css/responsive.css* |
+|**NoScript**          | Add CSS-links as fallback                                                                 | *enabled*, disabled |
 |**JS**                | Minify default JS-files and inline-code into min.js                                       | *enabled*, disabled |
-|Lib to minify JS      | Which lib to minify Javascript                                                            | *minify*, jsshrink|
+|Lib to minify JS      | Which lib to minify Javascript                                                            | *minifier*, jsshrink|
 |FilePath of min.js    | FilePath to store minified JS-files, example css/min.js                                   | *min.js* | 
-|Default JS-files      | Comma-separated list, optional: add defer/async: js/application.js\|\|defer\|\|async)     | *js/jquery.min.js,js/application.js** |
+|Default JS-files      | Comma-separated list, optional: add defer/async: js/application.js\|\|defer\|\|async)     | *js/jquery.min.js,js/application.js*
 |Default inline js code| Default inline-code, will be added to min.js                                              | | 
 |**Defer Images**      | When enabled, it replaces all img src by src="blank.jpg" data-src "real-image.jpg")       | enabled, *disabled* | 
 |FilePath to blank.jpg | Filepath to blank-image                                                                   | *img/blank.jpg* | 
 |**Minify** defer script | Inject minified defer script                                                            | *enabled*, disabled |
 |Minify globally       | Enable/disable minify globally                                                            | *enabled*, disabled |
 |**Minify HTML**       | Minify HTML-output at runtime                                                             | *disabled*, minifier, regex |
-|**Cache**             | Caching of minified files (can be disabled for debug)                                     | *disabled*, minifier, regex | 
+|**Cache**             | Caching of minified files (can be disabled for debug)                                     | *disabled*, enabled | 
 |Path to cache-file    | Path where to store cache-related files (empty defaults to assets/cache/deferMinifyX)     | |
-|Reset-type            | Modx "Clear Cache"-Button: index = clear file-index, all = clear files + file-index       | *index* |
+|Reset-type            | Modx "Clear Cache"-Button: index = clear file-index, all = clear files + file-index       | nothing, *index*, all |
 |Parameter-Suffix      | String to add as cache-param min.js?suffix (enables min.js?*ver=*xxx)                     | | 
 |**Debug**             | Shows extended debug-infos (in console.log() and HTML-comments, **disable** on live-sites)| enabled, *disabled* | 
 |Chunkname of debug-tpl| Optional Chunk to display debug-infos: [+ids+], [+js+], [+css+], [+options+], [+messages+]| |
