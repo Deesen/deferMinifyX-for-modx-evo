@@ -58,7 +58,7 @@ $e = &$modx->event;
 switch ($e->name) {
 
     // 1. Set options at Modx Init before cache
-    case "OnLoadWebDocument":
+    case "OnWebPageInit":
         deferMinifyX::setOptions($optionsArr);
         deferMinifyX::loadCache();
         deferMinifyX::prepareMinifyLibs();
@@ -66,7 +66,8 @@ switch ($e->name) {
 
     // 2. Set default-setup before parsing first snippet-calls to reliably set ID "min"
     // Additional [[deferMinifyX?&add=`src`&val=``&id=``&dependsOn=`min`]] 
-    case "OnParseDocument":
+    case "OnLoadWebPageCache":
+    case "OnLoadWebDocument":
         // default min-sets from plugin-config
         deferMinifyX::addCssSrc($defaultCssFiles, true, false, false, 'default'); // Add css as default-set
         deferMinifyX::addScriptSrc($defaultJsFiles, 'min');     // Add script-src with ID "min"
@@ -75,7 +76,6 @@ switch ($e->name) {
 
     // 3. Before sending to browser prepare and prepend final script to </body> 
     case "OnWebPagePrerender":
-        
         if (isset($setPlaceholder) && !empty(isset($setPlaceholder)) && $outputArr['output'] != '') {
             $outputArr = deferMinifyX::getDefer();
             $modx->setPlaceholder($setPlaceholder, $outputArr['output'].$outputArr['debug']);
@@ -92,7 +92,7 @@ switch ($e->name) {
         deferMinifyX::setOptions($optionsArr);
         deferMinifyX::resetCache();
         break;
-    
+
     // Important! Stop here!
     default :
         return;
