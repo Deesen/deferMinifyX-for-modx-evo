@@ -76,7 +76,7 @@ switch ($e->name) {
 
     // 3. Before sending to browser prepare and prepend final script to </body> 
     case "OnWebPagePrerender":
-        if (isset($setPlaceholder) && !empty(isset($setPlaceholder)) && $outputArr['output'] != '') {
+        if (isset($setPlaceholder) && !empty($setPlaceholder) && $outputArr['output'] != '') {
             $outputArr = deferMinifyX::getDefer();
             $modx->setPlaceholder($setPlaceholder, $outputArr['output'].$outputArr['debug']);
             break;

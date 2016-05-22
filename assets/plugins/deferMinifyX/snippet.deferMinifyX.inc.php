@@ -32,7 +32,7 @@ if(isset($get)) {
         case 'defer':
             $outputArr = deferMinifyX::getDefer();
             
-            if (isset($setPlaceholder) && !empty(isset($setPlaceholder)) && $outputArr['output'] != '') {
+            if (isset($setPlaceholder) && !empty($setPlaceholder) && $outputArr['output'] != '') {
                 $modx->setPlaceholder($setPlaceholder, $outputArr['output'].$outputArr['debug']);
                 break;
             } else {
